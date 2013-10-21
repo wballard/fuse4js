@@ -79,7 +79,8 @@ enum fuseop_t {
   OP_RMDIR,
   OP_INIT,
   OP_DESTROY,
-  OP_ACCESS
+  OP_ACCESS,
+  OP_TRUNCATE
 };
 
 const char* fuseop_names[] = {
@@ -98,7 +99,8 @@ const char* fuseop_names[] = {
     "rmdir",
     "init",
     "destroy",
-    "access"
+    "access",
+    "truncate"
 };
 
 static struct {
@@ -123,7 +125,10 @@ static struct {
     struct {
       int mode;
     } access;
-   struct {
+    struct {
+      off_t size;
+    } truncate;
+    struct {
       off_t offset;
       size_t len;
       char *dstBuf;
@@ -318,6 +323,14 @@ int f4js_access(const char *path, int mode)
 
 // ---------------------------------------------------------------------------
 
+int f4js_truncate(const char *path, off_t size)
+{
+  f4js_cmd.u.truncate.size = size;
+  return f4js_rpc(OP_TRUNCATE, path);
+}
+
+// ---------------------------------------------------------------------------
+
 void *fuse_thread(void *)
 {
   struct fuse_operations ops = { 0 };
@@ -338,6 +351,7 @@ void *fuse_thread(void *)
   ops.init = f4js_init;
   ops.destroy = f4js_destroy;
   ops.access = f4js_access;
+  ops.truncate = f4js_truncate;
   const char* debugOption = f4js.enableFuseDebug? "-d":"-f";
   char *argv[] = { (char*)"dummy",
     (char*)"-o", (char*)"allow_other",
@@ -609,6 +623,10 @@ static void DispatchOp(uv_async_t* handle, int status)
 
   case OP_RELEASE:
     passHandle = true;
+    break;
+
+  case OP_TRUNCATE:
+    argv[argc++] = Number::New((double)f4js_cmd.u.truncate.size);
     break;
 
   default:
