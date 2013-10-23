@@ -355,9 +355,10 @@ void *fuse_thread(void *)
   const char* debugOption = f4js.enableFuseDebug? "-d":"-f";
   char *argv[] = { (char*)"dummy",
     (char*)"-o", (char*)"allow_other",
+    (char*)"-o", (char*)"nonempty",
     (char*)"-s", (char*)debugOption,
     (char*)f4js.root.c_str() };
-  if (fuse_main(6, argv, &ops, NULL)) {
+  if (fuse_main(8, argv, &ops, NULL)) {
     // Error occured
     f4js_destroy(NULL);
   }
